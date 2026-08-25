@@ -31,9 +31,16 @@ New-DlpComplianceRule `
     -Name "Block credit cards in prompts" `
     -Policy $policyName `
     -ContentContainsSensitiveInformation @(
-        @{ Name = "Credit Card Number"; minCount = "1" }
+        @{ Name = "Credit Card Number"; minCount = "1" },
+        @{ Name = "[KT-개인정보] 여권번호"; minCount = "1" },
+        @{ Name = "[KT-개인정보] 전화번호"; minCount = "1"},
+        @{ Name = "[KT-개인정보] 주민등록번호"; minCount = "1" },
+        @{ Name = "South Korea Driver's License Number"; minCount = "1" },
+        @{ Name = "South Korea Passport Number"; minCount = "1" },
+        @{ Name = "South Korea Resident Registration Number"; minCount = "1" }
     ) `
     -RestrictAccess @(
         @{ setting = "UploadText"; value = "Block" }
     ) `
+    -ReportSeverityLevel High `
     -RuleErrorAction RetryThenBlock
