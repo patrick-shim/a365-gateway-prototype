@@ -1,0 +1,22 @@
+# Agent package
+-e ./a365-gateway-agent
+
+# Gateway package
+-e ./a365-gateway-prototype
+
+# Agent runtime
+azure-identity>=1.25.1,<2
+openai>=2.0.0,<3
+PyJWT>=2.10.0,<3
+PyYAML>=6.0.2,<7
+
+# Gateway
+microsoft-agents-activity>=1.3.0,<2
+microsoft-agents-authentication-msal>=1.3.0,<2
+microsoft-opentelemetry>=1.3.7,<2
+msal>=1.35.1,<2
+opentelemetry-api>=1.33.0,<2
+truststore>=0.10.0,<1
+
+# Shared
+python-dotenv>=1.0.0,<2

@@ -1,0 +1,18 @@
+# Local Python environment and configuration
+.venv/
+.env
+
+# Python bytecode and tool caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Packaging, build, and coverage output
+*.egg-info/
+build/
+dist/
+.coverage
+coverage.xml
+htmlcov/

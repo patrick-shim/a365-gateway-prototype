@@ -1,0 +1,154 @@
+schema_version: "1.0"
+description: "Synthetic values for Microsoft Purview DLP integration testing"
+generation_seed: 3652026
+synthetic_data_only: true
+expected_action: block
+samples:
+  - id: sit-0001
+    type: south_korea_mobile_phone_number
+    value: "010-6225-7735"
+    content: "테스트용 합성 한국 휴대전화번호는 010-6225-7735 입니다."
+  - id: sit-0002
+    type: credit_card_number
+    value: "4242424894220526"
+    content: "This synthetic credit card number is 4242424894220526."
+  - id: sit-0003
+    type: credit_card_number
+    value: "4242426997122046"
+    content: "This synthetic credit card number is 4242426997122046."
+  - id: sit-0004
+    type: south_korea_resident_registration_number
+    value: "050910-3708447"
+    content: "테스트용 합성 주민등록번호는 050910-3708447 입니다."
+  - id: sit-0005
+    type: credit_card_number
+    value: "4242429788093434"
+    content: "This synthetic credit card number is 4242429788093434."
+  - id: sit-0006
+    type: south_korea_passport_number
+    value: "O28635200"
+    content: "테스트용 합성 한국 여권번호는 O28635200 입니다."
+  - id: sit-0007
+    type: credit_card_number
+    value: "4242420927863852"
+    content: "This synthetic credit card number is 4242420927863852."
+  - id: sit-0008
+    type: south_korea_mobile_phone_number
+    value: "010-3733-4333"
+    content: "테스트용 합성 한국 휴대전화번호는 010-3733-4333 입니다."
+  - id: sit-0009
+    type: south_korea_passport_number
+    value: "D57460297"
+    content: "테스트용 합성 한국 여권번호는 D57460297 입니다."
+  - id: sit-0010
+    type: south_korea_passport_number
+    value: "O48287541"
+    content: "테스트용 합성 한국 여권번호는 O48287541 입니다."
+  - id: sit-0011
+    type: south_korea_resident_registration_number
+    value: "601011-2209334"
+    content: "테스트용 합성 주민등록번호는 601011-2209334 입니다."
+  - id: sit-0012
+    type: south_korea_resident_registration_number
+    value: "671208-2727983"
+    content: "테스트용 합성 주민등록번호는 671208-2727983 입니다."
+  - id: sit-0013
+    type: south_korea_passport_number
+    value: "R24119572"
+    content: "테스트용 합성 한국 여권번호는 R24119572 입니다."
+  - id: sit-0014
+    type: south_korea_passport_number
+    value: "M22080992"
+    content: "테스트용 합성 한국 여권번호는 M22080992 입니다."
+  - id: sit-0015
+    type: credit_card_number
+    value: "4242420083016709"
+    content: "This synthetic credit card number is 4242420083016709."
+  - id: sit-0016
+    type: south_korea_passport_number
+    value: "O65077167"
+    content: "테스트용 합성 한국 여권번호는 O65077167 입니다."
+  - id: sit-0017
+    type: credit_card_number
+    value: "4242421165638592"
+    content: "This synthetic credit card number is 4242421165638592."
+  - id: sit-0018
+    type: south_korea_mobile_phone_number
+    value: "010-9398-3161"
+    content: "테스트용 합성 한국 휴대전화번호는 010-9398-3161 입니다."
+  - id: sit-0019
+    type: south_korea_passport_number
+    value: "M93686989"
+    content: "테스트용 합성 한국 여권번호는 M93686989 입니다."
+  - id: sit-0020
+    type: credit_card_number
+    value: "4242427775343978"
+    content: "This synthetic credit card number is 4242427775343978."
+  - id: sit-0021
+    type: south_korea_mobile_phone_number
+    value: "010-0408-7897"
+    content: "테스트용 합성 한국 휴대전화번호는 010-0408-7897 입니다."
+  - id: sit-0022
+    type: south_korea_passport_number
+    value: "R40772772"
+    content: "테스트용 합성 한국 여권번호는 R40772772 입니다."
+  - id: sit-0023
+    type: south_korea_mobile_phone_number
+    value: "010-9999-0693"
+    content: "테스트용 합성 한국 휴대전화번호는 010-9999-0693 입니다."
+  - id: sit-0024
+    type: south_korea_mobile_phone_number
+    value: "010-3357-3995"
+    content: "테스트용 합성 한국 휴대전화번호는 010-3357-3995 입니다."
+  - id: sit-0025
+    type: credit_card_number
+    value: "4242423725035707"
+    content: "This synthetic credit card number is 4242423725035707."
+  - id: sit-0026
+    type: south_korea_resident_registration_number
+    value: "800323-2742791"
+    content: "테스트용 합성 주민등록번호는 800323-2742791 입니다."
+  - id: sit-0027
+    type: south_korea_mobile_phone_number
+    value: "010-4959-7081"
+    content: "테스트용 합성 한국 휴대전화번호는 010-4959-7081 입니다."
+  - id: sit-0028
+    type: credit_card_number
+    value: "4242428475135599"
+    content: "This synthetic credit card number is 4242428475135599."
+  - id: sit-0029
+    type: credit_card_number
+    value: "4242425872447601"
+    content: "This synthetic credit card number is 4242425872447601."
+  - id: sit-0030
+    type: south_korea_passport_number
+    value: "D63655555"
+    content: "테스트용 합성 한국 여권번호는 D63655555 입니다."
+  - id: sit-0031
+    type: south_korea_passport_number
+    value: "O57504611"
+    content: "테스트용 합성 한국 여권번호는 O57504611 입니다."
+  - id: sit-0032
+    type: south_korea_mobile_phone_number
+    value: "010-1445-4661"
+    content: "테스트용 합성 한국 휴대전화번호는 010-1445-4661 입니다."
+  - id: sit-0033
+    type: south_korea_mobile_phone_number
+    value: "010-0104-1703"
+    content: "테스트용 합성 한국 휴대전화번호는 010-0104-1703 입니다."
+  - id: sit-0034
+    type: credit_card_number
+    value: "4242428434109222"
+    content: "This synthetic credit card number is 4242428434109222."
+  - id: sit-0035
+    type: south_korea_mobile_phone_number
+    value: "010-7245-9037"
+    content: "테스트용 합성 한국 휴대전화번호는 010-7245-9037 입니다."
+  - id: sit-0036
+    type: credit_card_number
+    value: "4242427639906390"
+    content: "This synthetic credit card number is 4242427639906390."
+  - id: sit-0037
+    type: south_korea_passport_number
+    value: "M58658777"
+    content: "테스트용 합성 한국 여권번호는 M58658777 입니다."

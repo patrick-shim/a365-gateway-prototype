@@ -1,0 +1,9 @@
+{
+  "tenantId": "ff8b1e46-ff0f-4bc2-ab02-caf2b92da496",
+  "clientAppId": "3163c006-cfc0-45bd-8779-f43165f50b78",
+  "agentIdentityDisplayName": "A365GatewayPrototype Identity",
+  "agentBlueprintDisplayName": "A365GatewayPrototype Blueprint",
+  "agentDescription": "A365GatewayPrototype",
+  "aiTeammate": false,
+  "useBlueprint": true
+}
