@@ -93,6 +93,7 @@ samples:
         response.choices[0].message.content = "answer"
         client = MagicMock()
         client.chat.completions.create.return_value = response
+        gateway.record_completion.return_value = True
 
         with (
             patch.object(sit, "load_sit_samples", return_value=[sample]),
@@ -111,6 +112,44 @@ samples:
         self.assertEqual(exit_code, 0)
         gateway.record_completion.assert_called_once()
         gateway.record_failure.assert_not_called()
+
+    def test_end_to_end_batch_does_not_report_failed_optional_export(self) -> None:
+        sample = SitSample("sample", "public", "content", "allow")
+        gateway = MagicMock()
+        gateway.evaluate_content.side_effect = [
+            DlpDecision(True, None),
+            DlpDecision(True, None),
+        ]
+        gateway.record_completion.return_value = False
+        response = MagicMock()
+        response.choices[0].message.content = "answer"
+        client = MagicMock()
+        client.chat.completions.create.return_value = response
+
+        with (
+            patch.object(sit, "load_sit_samples", return_value=[sample]),
+            patch.object(sit.AgentSettings, "from_environment", return_value=SETTINGS),
+            patch.object(sit, "DefaultAzureCredential", return_value=object()),
+            patch.object(sit, "build_openai_client", return_value=client),
+            patch.object(
+                sit.TelemetryClient,
+                "from_environment",
+                return_value=gateway,
+            ),
+            patch("builtins.print") as print_mock,
+        ):
+            exit_code = sit.run_sit_batch(Path("samples.yaml"), use_ai=True)
+
+        self.assertEqual(exit_code, 0)
+        output = "\n".join(
+            " ".join(str(value) for value in call.args)
+            for call in print_mock.call_args_list
+        )
+        self.assertIn(
+            "AI results: 1 calls, 1 completed, "
+            "0 completion telemetry events exported, 0 responses blocked.",
+            output,
+        )
 
 
 if __name__ == "__main__":

@@ -82,6 +82,7 @@ def run_sit_batch(path: Path, *, use_ai: bool = False) -> int:
     errors: list[str] = []
     ai_calls = 0
     ai_completions = 0
+    telemetry_exports = 0
     response_blocks = 0
 
     print(f"Evaluating {len(samples)} synthetic SIT samples from {path}.")
@@ -148,13 +149,14 @@ def run_sit_batch(path: Path, *, use_ai: bool = False) -> int:
                         context=context,
                     )
                 else:
-                    gateway.record_completion(
+                    ai_completions += 1
+                    if gateway.record_completion(
                         user_input=sample.content,
                         answer=answer,
                         response=response,
                         context=context,
-                    )
-                    ai_completions += 1
+                    ):
+                        telemetry_exports += 1
         except Exception as exc:
             errors.append(
                 f"{sample.sample_id} ({sample.sit_type}): {type(exc).__name__}: {exc}"
@@ -174,8 +176,9 @@ def run_sit_batch(path: Path, *, use_ai: bool = False) -> int:
     )
     if use_ai:
         print(
-            f"AI results: {ai_calls} calls, {ai_completions} completed and "
-            f"exported, {response_blocks} responses blocked."
+            f"AI results: {ai_calls} calls, {ai_completions} completed, "
+            f"{telemetry_exports} completion telemetry events exported, "
+            f"{response_blocks} responses blocked."
         )
     for problem in mismatches + errors:
         print(f"- {problem}")

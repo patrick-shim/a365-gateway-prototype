@@ -30,9 +30,9 @@ Agent 365를 통해 관찰하기 위한 2개 프로세스 Python 프로토타입
 | 로컬 2개 프로세스 배포 | 지원 |
 | 운영 클라우드 배포 | 아직 준비되지 않음. IaC, container, `azure.yaml` 없음 |
 
-현재 오프라인 테스트는 총 **73개**입니다.
+현재 오프라인 테스트는 총 **76개**입니다.
 
-- 에이전트 테스트 27개
+- 에이전트 테스트 30개
 - 게이트웨이 테스트 46개
 
 게이트웨이는 등록되어 있으며 생성된 로컬 설정으로 시작할 수 있습니다. 그러나
@@ -182,7 +182,7 @@ a365-gateway-prototype/
 |   |   |-- gateway.py             DLP/텔레메트리 HTTP 클라이언트
 |   |   |-- models.py              호출자 및 대화 값 객체
 |   |   `-- sit.py                 SIT YAML 검증 및 배치 실행
-|   `-- tests/                     오프라인 테스트 27개
+|   `-- tests/                     오프라인 테스트 30개
 |
 `-- a365-gateway-prototype/
     |-- .env                       게이트웨이 설정 및 생성 값, Git에서 제외
@@ -712,8 +712,8 @@ flowchart TD
     Model[Azure OpenAI 호출]
     Download[downloadText 평가]
     ResponseAllowed{응답 허용?}
-    Complete[완료 이벤트 내보내기]
-    Fail[실패 이벤트 내보내기]
+    Complete[모델 완료 수 증가<br/>완료 이벤트 내보내기 시도]
+    Fail[실패 이벤트 내보내기 시도]
     Progress[카운터 및 진행 상황 갱신]
     Done{남은 샘플?}
     Exit[mismatch/error가 없으면 0<br/>그 외 1]
@@ -729,6 +729,11 @@ flowchart TD
     Done -->|예| Sample
     Done -->|아니요| Exit
 ```
+
+마지막 AI 요약은 모델 완료 수와 게이트웨이가 수락한 완료 텔레메트리 이벤트 수를
+별도로 출력합니다. `OBS_GATEWAY_REQUIRED=false`에서 내보내기가 실패하면 경고를
+출력하고 내보내기 수를 증가시키지 않으며, 그 외 문제가 없는 배치는 실패시키지
+않습니다.
 
 기본 샘플은 모두 합성 값입니다. 예상 action은 실제 tenant의 Purview policy,
 application location, protection scope, confidence level, minimum count 조건에
@@ -990,12 +995,12 @@ Azure, Agent 365 등록, Microsoft Graph, Purview, 실제 게이트웨이 프로
 ### Windows PowerShell
 
 ```powershell
-# Agent: 27 tests
+# Agent: 30 tests
 .\.venv\Scripts\python.exe -B -m unittest discover `
     -s .\a365-gateway-agent\tests `
     -v
 
-# Gateway: 45 tests
+# Gateway: 46 tests
 .\.venv\Scripts\python.exe -B -m unittest discover `
     -s .\a365-gateway-prototype\tests `
     -v
@@ -1046,8 +1051,8 @@ Graph 권한, 정책, 계약 문제를 분리합니다.
 | 코드 | 의미 |
 |---:|---|
 | `0` | 정상 채팅 종료 또는 mismatch/error 없는 SIT 배치 |
-| `1` | SIT mismatch/error 또는 설정 이외의 요청 실패 |
-| `2` | 명령 인자, 설정, 필수 텔레메트리 `RuntimeError` |
+| `1` | SIT mismatch/수집된 샘플 error 또는 최상위 요청/처리 예외 |
+| `2` | 명령 인자 오류 또는 설정, DLP, 필수 텔레메트리 실패와 같은 예상된 최상위 운영 `RuntimeError` |
 
 ### 게이트웨이
 

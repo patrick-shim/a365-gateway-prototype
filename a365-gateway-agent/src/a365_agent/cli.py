@@ -55,9 +55,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         run_chat()
     except RuntimeError as exc:
-        print(f"Configuration or telemetry error: {exc}", file=sys.stderr)
+        print(f"Operational error: {exc}", file=sys.stderr)
         return 2
     except Exception as exc:
-        print(f"Azure OpenAI request failed: {exc}", file=sys.stderr)
+        print(
+            f"Request or processing error ({type(exc).__name__}): {exc}",
+            file=sys.stderr,
+        )
         return 1
     return 0

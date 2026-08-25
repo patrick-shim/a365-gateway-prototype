@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -33,16 +34,21 @@ class CliTests(unittest.TestCase):
     def test_main_maps_runtime_errors_to_exit_code_two(self) -> None:
         with (
             patch.object(cli, "run_chat", side_effect=RuntimeError("bad config")),
-            patch("sys.stderr"),
+            patch("sys.stderr", new_callable=io.StringIO) as stderr,
         ):
             self.assertEqual(cli.main([]), 2)
+        self.assertEqual(stderr.getvalue().strip(), "Operational error: bad config")
 
     def test_main_maps_other_errors_to_exit_code_one(self) -> None:
         with (
             patch.object(cli, "run_chat", side_effect=ValueError("bad request")),
-            patch("sys.stderr"),
+            patch("sys.stderr", new_callable=io.StringIO) as stderr,
         ):
             self.assertEqual(cli.main([]), 1)
+        self.assertEqual(
+            stderr.getvalue().strip(),
+            "Request or processing error (ValueError): bad request",
+        )
 
 
 if __name__ == "__main__":

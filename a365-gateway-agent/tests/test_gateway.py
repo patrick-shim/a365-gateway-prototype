@@ -4,6 +4,7 @@ import json
 import unittest
 from unittest.mock import patch
 
+from a365_agent.config import AgentSettings
 from a365_agent.gateway import TelemetryClient
 from a365_agent.models import Caller, ConversationContext
 
@@ -43,6 +44,42 @@ def make_client(*, delivery_required: bool = True) -> TelemetryClient:
 
 
 class TelemetryClientTests(unittest.TestCase):
+    def test_invalid_timeouts_are_rejected_before_caller_authentication(self) -> None:
+        settings = AgentSettings(
+            endpoint="https://example.openai.azure.com/",
+            deployment="deployment",
+            api_version="2024-12-01-preview",
+            scope="scope",
+            system_prompt="prompt",
+        )
+        with patch(
+            "a365_agent.gateway.Caller.from_azure_credential"
+        ) as caller_from_credential:
+            for value in ("invalid", "0", "-1", "nan", "inf"):
+                with (
+                    self.subTest(value=value),
+                    patch.dict(
+                        "os.environ",
+                        {
+                            "OBS_GATEWAY_URL": (
+                                "http://127.0.0.1:4318/v1/telemetry"
+                            ),
+                            "OBS_GATEWAY_TIMEOUT_SECONDS": value,
+                        },
+                        clear=True,
+                    ),
+                ):
+                    with self.assertRaisesRegex(
+                        RuntimeError,
+                        "OBS_GATEWAY_TIMEOUT_SECONDS must be a positive finite number",
+                    ):
+                        TelemetryClient.from_environment(
+                            credential=object(),
+                            settings=settings,
+                        )
+
+        caller_from_credential.assert_not_called()
+
     def test_dlp_request_matches_gateway_contract(self) -> None:
         context = ConversationContext("session-id", "conversation-id")
         with patch(
@@ -135,9 +172,17 @@ class TelemetryClientTests(unittest.TestCase):
             patch.object(client, "_post_json", side_effect=OSError("offline")),
             patch("builtins.print") as print_mock,
         ):
-            client._send({"event_id": "event"})
+            delivered = client._send({"event_id": "event"})
 
+        self.assertFalse(delivered)
         print_mock.assert_called_once()
+
+    def test_successful_telemetry_reports_delivery(self) -> None:
+        client = make_client()
+        with patch.object(client, "_post_json", return_value={}):
+            delivered = client._send({"event_id": "event"})
+
+        self.assertTrue(delivered)
 
 
 if __name__ == "__main__":

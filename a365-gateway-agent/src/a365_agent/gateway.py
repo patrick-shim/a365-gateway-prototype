@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import socket
 import sys
@@ -60,6 +61,18 @@ class TelemetryClient:
         settings: AgentSettings,
     ) -> TelemetryClient:
         gateway_url = required_env("OBS_GATEWAY_URL")
+        timeout_text = os.getenv("OBS_GATEWAY_TIMEOUT_SECONDS", "10")
+        try:
+            timeout_seconds = float(timeout_text)
+        except ValueError as exc:
+            raise RuntimeError(
+                "OBS_GATEWAY_TIMEOUT_SECONDS must be a positive finite number"
+            ) from exc
+        if not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
+            raise RuntimeError(
+                "OBS_GATEWAY_TIMEOUT_SECONDS must be a positive finite number"
+            )
+
         return cls(
             gateway_url=gateway_url,
             dlp_url=os.getenv("OBS_GATEWAY_DLP_URL")
@@ -68,7 +81,7 @@ class TelemetryClient:
             inference_endpoint=settings.endpoint,
             caller=Caller.from_azure_credential(credential, settings.scope),
             channel=os.getenv("TELEMETRY_CHANNEL", "console"),
-            timeout_seconds=float(os.getenv("OBS_GATEWAY_TIMEOUT_SECONDS", "10")),
+            timeout_seconds=timeout_seconds,
             delivery_required=env_is_true("OBS_GATEWAY_REQUIRED", True),
             api_key=os.getenv("OBS_GATEWAY_API_KEY") or None,
         )
@@ -112,11 +125,11 @@ class TelemetryClient:
         answer: str,
         response: ChatCompletion,
         context: ConversationContext,
-    ) -> None:
-        """Report a successful model call, including usage and finish reason."""
+    ) -> bool:
+        """Report a successful model call and return whether delivery succeeded."""
 
         usage = response.usage
-        self._send(
+        return self._send(
             self._build_event(
                 user_input=user_input,
                 answer=answer,
@@ -133,10 +146,10 @@ class TelemetryClient:
         user_input: str,
         error: Exception,
         context: ConversationContext,
-    ) -> None:
-        """Report a failed model call so it also appears in Agent 365 activity."""
+    ) -> bool:
+        """Report a failed model call and return whether delivery succeeded."""
 
-        self._send(
+        return self._send(
             self._build_event(
                 user_input=user_input,
                 answer="",
@@ -189,13 +202,15 @@ class TelemetryClient:
             }
         return event
 
-    def _send(self, event: dict[str, object]) -> None:
+    def _send(self, event: dict[str, object]) -> bool:
         try:
             self._post_json(self.gateway_url, event)
+            return True
         except Exception as exc:
             if self.delivery_required:
                 raise RuntimeError(f"telemetry delivery failed: {exc}") from exc
             print(f"Telemetry warning: {exc}", file=sys.stderr)
+            return False
 
     def _post_json(
         self,

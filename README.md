@@ -30,9 +30,9 @@ security responsibilities.
 | Local two-process deployment | Supported |
 | Production cloud deployment | Not yet prepared; no IaC, container, or `azure.yaml` exists |
 
-The repository currently has **73 passing offline tests**:
+The repository currently has **76 passing offline tests**:
 
-- 27 agent tests
+- 30 agent tests
 - 46 gateway tests
 
 The gateway is registered and starts with its generated local configuration.
@@ -186,7 +186,7 @@ a365-gateway-prototype/
 |   |   |-- gateway.py             Gateway DLP and telemetry HTTP client
 |   |   |-- models.py              Caller and conversation values
 |   |   `-- sit.py                 SIT YAML validation and batch runner
-|   `-- tests/                     27 offline tests
+|   `-- tests/                     30 offline tests
 |
 `-- a365-gateway-prototype/
 		|-- .env                       Gateway settings and generated values, ignored
@@ -719,8 +719,8 @@ flowchart TD
 		Model[Call Azure OpenAI]
 		Download[Evaluate downloadText]
 		ResponseAllowed{Response allowed?}
-		Complete[Export completion event]
-		Fail[Export failure event]
+		Complete[Count model completion<br/>attempt completion export]
+		Fail[Attempt failure event export]
 		Progress[Update counters and progress]
 		Done{More samples?}
 		Exit[Exit 0 if no mismatches/errors<br/>otherwise exit 1]
@@ -736,6 +736,11 @@ flowchart TD
 		Done -->|Yes| Sample
 		Done -->|No| Exit
 ```
+
+The final AI summary reports model completions separately from completion
+telemetry events accepted by the gateway. With `OBS_GATEWAY_REQUIRED=false`, a
+failed export prints a warning and leaves the export count unchanged without
+failing an otherwise clean batch.
 
 The bundled values are synthetic. Expected actions still depend on your live
 tenant policy, application location, protection scope, confidence level, and
@@ -997,7 +1002,7 @@ gateway process.
 ### Windows PowerShell
 
 ```powershell
-# Agent: 27 tests
+# Agent: 30 tests
 .\.venv\Scripts\python.exe -B -m unittest discover `
 		-s .\a365-gateway-agent\tests `
 		-v
@@ -1053,8 +1058,8 @@ Graph permission, policy, and contract problems without inference cost.
 | Code | Meaning |
 |---:|---|
 | `0` | Normal chat exit or SIT batch with no mismatches/errors |
-| `1` | SIT mismatch/error or non-configuration request failure |
-| `2` | Argument, configuration, or required telemetry `RuntimeError` |
+| `1` | SIT mismatch/collected sample error or top-level request/processing exception |
+| `2` | Argument error or expected top-level operational `RuntimeError` such as configuration, DLP, or required telemetry failure |
 
 ### Gateway
 

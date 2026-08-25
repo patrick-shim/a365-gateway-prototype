@@ -277,7 +277,7 @@ az login
 | 변수 | 기본값 | 동작 |
 |---|---|---|
 | `OBS_GATEWAY_DLP_URL` | `OBS_GATEWAY_URL`에서 파생 | DLP POST 엔드포인트를 재정의합니다. 기본 텔레메트리 URL에서는 `http://127.0.0.1:4318/v1/dlp/evaluate`가 됩니다. |
-| `OBS_GATEWAY_TIMEOUT_SECONDS` | `10` | 모든 게이트웨이 요청에 개별 적용되는 부동소수점 제한 시간입니다. 한 번의 DLP 평가가 여러 Graph 호출을 포함할 수 있어 예제 파일은 `60`을 사용합니다. |
+| `OBS_GATEWAY_TIMEOUT_SECONDS` | `10` | 모든 게이트웨이 요청에 개별 적용되는 0보다 큰 유한 부동소수점 제한 시간입니다. 잘못된 값, 0, 음수, `NaN`, 무한대는 호출자 인증 전에 실패합니다. 한 번의 DLP 평가가 여러 Graph 호출을 포함할 수 있어 예제 파일은 `60`을 사용합니다. |
 | `OBS_GATEWAY_REQUIRED` | `true` | 텔레메트리 전달에만 적용됩니다. 대소문자와 관계없이 `1`, `true`, `yes`, `on`만 참입니다. 명시된 다른 값은 거짓입니다. 이 값과 관계없이 DLP 평가는 항상 필수입니다. |
 | `TELEMETRY_CHANNEL` | `console` | 텔레메트리 이벤트에 기록할 채널입니다. |
 | `OBS_GATEWAY_API_KEY` | 빈 값 | 비어 있지 않으면 두 게이트웨이 엔드포인트에 `Authorization: Bearer <value>`를 보냅니다. |
@@ -406,11 +406,19 @@ OpenAI를 호출하지 않으며 모델 텔레메트리 이벤트도 내보내�
 2. 실제 결과와 `expected_action`을 비교합니다.
 3. 실제 DLP 결과가 allow인 경우에만 Azure OpenAI를 호출합니다.
 4. 모델 응답을 `downloadText`로 평가합니다.
-5. 응답이 허용되면 완료 텔레메트리를 내보냅니다.
-6. 응답이 차단되면 실패 텔레메트리를 내보내고 응답 차단 수를 증가시킵니다.
+5. 응답이 허용되면 모델 완료 수를 증가시키고 완료 텔레메트리 내보내기를
+  시도합니다.
+6. 응답이 차단되면 실패 텔레메트리 내보내기를 시도하고 응답 차단 수를
+  증가시킵니다.
 
 허용된 각 샘플은 시스템 프롬프트와 해당 샘플만 포함하는 독립적인 2개 메시지
 대화입니다. 샘플 사이에 모델 대화 기록을 공유하지 않습니다.
+
+마지막 `AI results` 줄은 모델 호출 수, 모델 완료 수, 성공적으로 내보낸 완료
+텔레메트리 이벤트 수, 응답 차단 수를 각각 출력합니다.
+`OBS_GATEWAY_REQUIRED=false`에서 선택적 텔레메트리 전달이 실패하면
+`Telemetry warning`을 출력하고 내보낸 이벤트 수는 증가하지 않습니다. 프롬프트
+mismatch나 수집된 error가 없다면 배치는 여전히 `0`을 반환할 수 있습니다.
 
 ### 사용자 정의 SIT 파일
 
@@ -450,7 +458,8 @@ samples:
 | `mismatched` | 프롬프트 DLP 결과와 예상 동작이 다른 수 |
 | `errors` | 게이트웨이, 모델, 파싱, 텔레메트리 예외가 발생한 샘플 수 |
 | `ai_calls` | 실제 프롬프트 DLP가 허용하여 Azure OpenAI에 도달한 수 |
-| `ai_completions` | 응답 DLP를 통과하고 텔레메트리 처리가 완료되거나 선택 사항이었던 수 |
+| `ai_completions` | 텔레메트리 전달 결과와 관계없이 응답 DLP를 통과한 모델 완료 수 |
+| `telemetry_exports` | 게이트웨이가 완료 텔레메트리 이벤트를 수락한 수 |
 | `response_blocks` | 모델 호출은 성공했지만 응답 DLP가 차단한 수 |
 
 프롬프트 결과가 예상과 일치하고 실패 이벤트 기록도 성공했다면 응답 차단만으로
@@ -581,17 +590,19 @@ Authorization: Bearer <OBS_GATEWAY_API_KEY>
 
 | 실패 또는 정책 결정 | 동작 |
 |---|---|
-| `.env` 또는 필수 설정 누락 | 설정 오류를 출력하고 `2` 반환 |
+| `.env` 또는 필수 설정 누락 | `Operational error: ...`를 출력하고 `2` 반환 |
+| 잘못된 `OBS_GATEWAY_TIMEOUT_SECONDS` | 호출자 인증 전에 `Operational error: ...`를 출력하고 `2` 반환 |
 | Azure ID가 설정된 scope 토큰을 획득하지 못함 | 콘솔 프롬프트가 나오기 전에 시작 실패 |
-| 토큰에 `oid`가 없고 `CALLER_USER_ID`도 없음 | 설정 오류를 출력하고 `2` 반환 |
+| 토큰에 `oid`가 없고 `CALLER_USER_ID`도 없음 | `Operational error: ...`를 출력하고 `2` 반환 |
 | 프롬프트 DLP 차단 | 차단 메시지를 출력하고 Azure OpenAI를 호출하지 않은 채 계속 실행 |
 | 프롬프트 또는 응답 DLP 요청 실패 | 현재 모드를 중단합니다. 텔레메트리가 선택이어도 DLP는 fail-open하지 않습니다. |
 | Azure OpenAI 호출 실패 | 실패 텔레메트리를 시도하고 사용자 턴을 롤백한 뒤 채팅 종료. SIT에서는 샘플 오류를 수집하고 다음 샘플 계속 실행 |
 | 응답 DLP 차단 | 실패 텔레메트리를 기록하고 사용자 턴을 롤백하며 응답을 숨긴 뒤 계속 실행 |
 | `OBS_GATEWAY_REQUIRED=true` 상태에서 완료 텔레메트리 실패 | 응답을 표시하거나 기록에 확정하기 전에 텔레메트리 오류 발생 |
-| `OBS_GATEWAY_REQUIRED=false` 상태에서 텔레메트리 실패 | 표준 오류에 경고를 출력하고 계속 실행 |
+| `OBS_GATEWAY_REQUIRED=false` 상태에서 텔레메트리 실패 | 표준 오류에 `Telemetry warning: ...`을 출력하고 계속 실행. SIT 완료 수와 내보내기 수는 별도로 유지 |
 | 게이트웨이가 JSON 객체가 아닌 값 반환 | 응답 거부 |
 | DLP 응답에 boolean `allowed`가 없음 | 정책 결정 거부 |
+| 그 밖의 최상위 예외 | `Request or processing error (<ExceptionType>): ...`를 출력하고 `1` 반환 |
 
 HTTP 오류는 로컬 예외 메시지에 게이트웨이 응답 본문을 포함합니다. 연결 실패는
 `cannot reach gateway: ...` 형식으로 출력됩니다.
@@ -601,8 +612,8 @@ HTTP 오류는 로컬 예외 메시지에 게이트웨이 응답 본문을 포�
 | 코드 | 의미 |
 |---|---|
 | `0` | 정상 채팅 종료 또는 mismatch/error가 없는 SIT 배치 |
-| `1` | SIT mismatch/error 또는 최상위에서 처리된 `RuntimeError` 이외의 요청 오류 |
-| `2` | 명령 인자 오류, 설정 `RuntimeError`, 필수 텔레메트리 오류, 기타 최상위 `RuntimeError` |
+| `1` | SIT mismatch/수집된 샘플 error 또는 최상위 요청/처리 예외 |
+| `2` | 명령 인자 오류 또는 설정, DLP, 필수 텔레메트리 실패와 같은 예상된 최상위 운영 `RuntimeError` |
 
 `--sit` 없이 `--ai`만 사용하면 명령 인자 오류이며 코드 `2`로 종료합니다.
 

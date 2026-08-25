@@ -278,7 +278,7 @@ string values are used as supplied.
 | Variable | Default | Behavior |
 |---|---|---|
 | `OBS_GATEWAY_DLP_URL` | Derived from `OBS_GATEWAY_URL` | Overrides the DLP POST endpoint. With the default telemetry URL, the derived value is `http://127.0.0.1:4318/v1/dlp/evaluate`. |
-| `OBS_GATEWAY_TIMEOUT_SECONDS` | `10` | Floating-point timeout applied independently to every gateway request. The example file uses `60` because one DLP evaluation can involve multiple Graph calls. |
+| `OBS_GATEWAY_TIMEOUT_SECONDS` | `10` | Positive finite floating-point timeout applied independently to every gateway request. Invalid, zero, negative, `NaN`, and infinite values fail before caller authentication. The example file uses `60` because one DLP evaluation can involve multiple Graph calls. |
 | `OBS_GATEWAY_REQUIRED` | `true` | Controls telemetry delivery only. True values are `1`, `true`, `yes`, and `on`, case-insensitively. Any other explicit value is false. DLP evaluation remains mandatory regardless of this setting. |
 | `TELEMETRY_CHANNEL` | `console` | Channel written into telemetry events. |
 | `OBS_GATEWAY_API_KEY` | Empty | Sends `Authorization: Bearer <value>` to both gateway endpoints when non-empty. |
@@ -408,11 +408,19 @@ For each sample:
 2. compare the actual action with `expected_action`;
 3. call Azure OpenAI only if the actual DLP result is allow;
 4. evaluate the model answer as `downloadText`;
-5. export a completion event if the answer is allowed; or
-6. export a failure event and count a response block if the answer is blocked.
+5. if the answer is allowed, count the model completion and attempt to export a
+	completion event; or
+6. if the answer is blocked, attempt to export a failure event and count a
+	response block.
 
 Each allowed sample is an independent two-message conversation containing only
 the system prompt and that sample. Samples never share model history.
+
+The final `AI results` line reports model calls, model completions, successfully
+exported completion telemetry events, and response blocks as separate values.
+When `OBS_GATEWAY_REQUIRED=false`, an optional telemetry failure prints a
+`Telemetry warning` and does not increment the exported-event count. The batch
+can still return `0` when there are no prompt mismatches or collected errors.
 
 ### Custom SIT file
 
@@ -454,7 +462,8 @@ mean:
 | `mismatched` | Prompt DLP action differed from the expected action. |
 | `errors` | The sample raised a gateway, model, parsing, or telemetry exception. |
 | `ai_calls` | Actual prompt DLP result allowed the sample to reach Azure OpenAI. |
-| `ai_completions` | Model answer passed response DLP and telemetry export completed or was optional. |
+| `ai_completions` | Model answer passed response DLP, regardless of telemetry delivery outcome. |
+| `telemetry_exports` | Completion telemetry event was accepted by the gateway. |
 | `response_blocks` | Model call succeeded but response DLP blocked its answer. |
 
 A response block alone does not make the batch fail if the prompt action matched
@@ -586,17 +595,19 @@ gateway API key. Plain HTTP does not encrypt content or the API key.
 
 | Failure or decision | Behavior |
 |---|---|
-| Missing `.env` or required setting | Print a configuration error and return `2`. |
+| Missing `.env` or required setting | Print `Operational error: ...` and return `2`. |
+| Invalid `OBS_GATEWAY_TIMEOUT_SECONDS` | Print `Operational error: ...` and return `2` before caller authentication. |
 | Azure identity cannot obtain the configured scope | Startup fails before the console prompt. |
-| Caller token has no `oid` and no `CALLER_USER_ID` | Print a configuration error and return `2`. |
+| Caller token has no `oid` and no `CALLER_USER_ID` | Print `Operational error: ...` and return `2`. |
 | Prompt DLP blocks | Print a block message, do not call Azure OpenAI, and continue. |
 | Prompt or response DLP request fails | Abort the current mode. DLP never fails open, even when telemetry is optional. |
 | Azure OpenAI call fails | Attempt failure telemetry, roll back the pending user turn, then terminate chat. In SIT mode, collect the sample error and continue. |
 | Response DLP blocks | Record failure telemetry, roll back the user turn, hide the response, and continue. |
 | Completion telemetry fails and `OBS_GATEWAY_REQUIRED=true` | Raise a telemetry error before displaying or committing the answer. |
-| Telemetry fails and `OBS_GATEWAY_REQUIRED=false` | Print a warning to standard error and continue. |
+| Telemetry fails and `OBS_GATEWAY_REQUIRED=false` | Print `Telemetry warning: ...` to standard error and continue. SIT completion and export counts remain distinct. |
 | Gateway returns non-object JSON | Reject the response. |
 | DLP response omits a boolean `allowed` | Reject the decision. |
+| Other top-level exception | Print `Request or processing error (<ExceptionType>): ...` and return `1`. |
 
 HTTP errors include the gateway response body in the local exception message.
 Connection failures are reported as `cannot reach gateway: ...`.
@@ -606,8 +617,8 @@ Connection failures are reported as `cannot reach gateway: ...`.
 | Code | Meaning |
 |---|---|
 | `0` | Normal chat exit, or SIT batch with no mismatches or errors. |
-| `1` | SIT mismatch/error, or a non-`RuntimeError` request failure handled at the top level. |
-| `2` | Argument parser error, configuration `RuntimeError`, required telemetry error, or another top-level `RuntimeError`. |
+| `1` | SIT mismatch/collected sample error, or a top-level request or processing exception. |
+| `2` | Argument parser error, or an expected top-level operational `RuntimeError` such as configuration, DLP, or required telemetry failure. |
 
 The command `--ai` without `--sit` is invalid and exits with parser code `2`.
 
